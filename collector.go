@@ -16,8 +16,9 @@ type MetricGroup struct {
 }
 
 type MetricDesc struct {
-	Type prometheus.ValueType
-	Desc prometheus.Desc
+	Type   prometheus.ValueType
+	Desc   prometheus.Desc
+	Factor float64
 }
 
 type Collector struct {
@@ -91,7 +92,7 @@ func (c *Collector) scrape(ch chan<- prometheus.Metric) {
 
 	errors := 0
 	c.up.Set(1)
-	c.scrapeLastTime.Set(Cast2Float64(time.Now()))
+	c.scrapeLastTime.Set(Cast2Float64(time.Now(), 1))
 	c.totalScrapes.Inc()
 
 	metrics, err := c.extractMetrics("SHOW LISTS;", c.metricGroupLists, extractKeyValue)
@@ -173,9 +174,9 @@ type ExtractFunc func(metricGroup *MetricGroup, columns []string, columnData []i
 
 func extractKeyValue(metricGroup *MetricGroup, columns []string, columnData []interface{}) []prometheus.Metric {
 	var result []prometheus.Metric
-	metricValue := Cast2Float64(columnData[1])
 	metricDesc := metricGroup.Metrics[Cast2string(columnData[0])]
 	if metricDesc != nil {
+		metricValue := Cast2Float64(columnData[1], metricDesc.Factor)
 		result = append(result, prometheus.MustNewConstMetric(&metricDesc.Desc, metricDesc.Type, metricValue))
 	}
 	return result
@@ -199,7 +200,7 @@ func extractWithLabels(metricGroup *MetricGroup, columns []string, columnData []
 		}
 		metricDesc := metricGroup.Metrics[colName]
 		if metricDesc != nil {
-			metricValue := Cast2Float64(columnData[i])
+			metricValue := Cast2Float64(columnData[i], metricDesc.Factor)
 			result = append(result, prometheus.MustNewConstMetric(&metricDesc.Desc, metricDesc.Type, metricValue, labelValues...))
 		}
 	}
@@ -211,8 +212,9 @@ func buildMetricGroup(descriptor MetricDescriptor) *MetricGroup {
 
 	for _, v := range descriptor.MetricProps {
 		m[v.Name] = &MetricDesc{
-			Type: v.Type,
-			Desc: *prometheus.NewDesc(fmt.Sprintf("%s_%s_%s", namespace, descriptor.Prefix, v.Name), v.Help, descriptor.Labels, nil),
+			Type:   v.Type,
+			Desc:   *prometheus.NewDesc(fmt.Sprintf("%s_%s_%s", namespace, descriptor.Prefix, v.Name), v.Help, descriptor.Labels, nil),
+			Factor: v.Factor,
 		}
 	}
 	return &MetricGroup{

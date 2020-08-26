@@ -11,9 +11,7 @@ type MockDB struct{}
 
 // Implement the SQLDB interface
 func (mdb *MockDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	rows := &sql.Rows{
-
-	}
+	rows := &sql.Rows{}
 	return rows, nil
 }
 

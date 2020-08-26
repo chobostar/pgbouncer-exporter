@@ -45,7 +45,7 @@ func ParseEnv() {
 }
 
 func main() {
-	flag.StringVar(&metricsPort, "p", "8989", "Port to listen on for web interface and telemetry")
+	flag.StringVar(&metricsPort, "p", "9127", "Port to listen on for web interface and telemetry")
 	flag.StringVar(&dataSourceName, "d", "postgres://pgbouncer:@localhost:6432/pgbouncer?sslmode=disable", "PgBouncer connection url")
 	flag.Parse()
 	ParseEnv()
